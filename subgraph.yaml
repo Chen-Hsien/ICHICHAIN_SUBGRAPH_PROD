@@ -1,0 +1,86 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: ICHICHAIN
+    network: matic
+    source:
+      address: "0x70b08F0779a49D322ee3fdD64D34bCb1Be029579"
+      abi: ICHICHAIN
+      startBlock: 058202015
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Approval
+        - ApprovalForAll
+        - ConsecutiveTransfer
+        - CoordinatorSet
+        - LastPrizeDraw
+        - LastPrizeWinner
+        - NewSeries
+        - NewSubPrize
+        - NewTicketStatus
+        - OwnershipTransferRequested
+        - OwnershipTransferred
+        - RefundSeries
+        - ResetSubPrize
+        - RevealDrawFulfilled
+        - RevealDrawSent
+        - Transfer
+        - UpdatePrize
+        - UpdateSeriesInformation
+        - UpdateSeriesLastPrizeOwner
+        - UpdateSeriesRemainingTicketNumbers
+        - UpdateTicketStatus
+      abis:
+        - name: ICHICHAIN
+          file: ./abis/ICHICHAIN.json
+      eventHandlers:
+        - event: Approval(indexed address,indexed address,indexed uint256)
+          handler: handleApproval
+        - event: ApprovalForAll(indexed address,indexed address,bool)
+          handler: handleApprovalForAll
+        - event: ConsecutiveTransfer(indexed uint256,uint256,indexed address,indexed address)
+          handler: handleConsecutiveTransfer
+        - event: CoordinatorSet(address)
+          handler: handleCoordinatorSet
+        - event: LastPrizeDraw(uint256,uint256,uint256)
+          handler: handleLastPrizeDraw
+        - event: LastPrizeWinner(uint256,uint256[])
+          handler: handleLastPrizeWinner
+        - event: NewSeries(indexed uint256,string,uint256,uint256,uint256,uint256,bool,uint256,uint256,string,string,string,string,address,bool)
+          handler: handleNewSeries
+        - event: NewSubPrize(indexed uint256,uint256,string,string,uint256)
+          handler: handleNewSubPrize
+        - event: NewTicketStatus(uint256,uint256,uint256,bool,bool,address)
+          handler: handleNewTicketStatus
+        - event: OwnershipTransferRequested(indexed address,indexed address)
+          handler: handleOwnershipTransferRequested
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: RefundSeries(indexed uint256,bool)
+          handler: handleRefundSeries
+        - event: ResetSubPrize(indexed uint256)
+          handler: handleResetSubPrize
+        - event: RevealDrawFulfilled(uint256,uint256,uint256[])
+          handler: handleRevealDrawFulfilled
+        - event: RevealDrawSent(uint256,uint256[])
+          handler: handleRevealDrawSent
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+        - event: UpdatePrize(indexed uint256,uint256,uint256)
+          handler: handleUpdatePrize
+        - event: UpdateSeriesInformation(indexed uint256,bool,uint256,string,string,string,string)
+          handler: handleUpdateSeriesInformation
+        - event: UpdateSeriesLastPrizeOwner(indexed uint256,address[])
+          handler: handleUpdateSeriesLastPrizeOwner
+        - event: UpdateSeriesRemainingTicketNumbers(indexed uint256,uint256)
+          handler: handleUpdateSeriesRemainingTicketNumbers
+        - event: UpdateTicketStatus(uint256,uint256,uint256,bool,bool)
+          handler: handleUpdateTicketStatus
+      file: ./src/ichichain.ts
