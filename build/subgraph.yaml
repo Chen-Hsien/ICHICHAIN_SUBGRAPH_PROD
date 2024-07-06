@@ -2,7 +2,7 @@ specVersion: 1.0.0
 indexerHints:
   prune: auto
 schema:
-  file: ./schema.graphql
+  file: schema.graphql
 dataSources:
   - kind: ethereum
     name: ICHICHAIN
@@ -34,7 +34,7 @@ dataSources:
         - UpdateTicketStatus
       abis:
         - name: ICHICHAIN
-          file: ./abis/ICHICHAIN.json
+          file: ICHICHAIN/abis/ICHICHAIN.json
       eventHandlers:
         - event: Approval(indexed address,indexed address,indexed uint256)
           handler: handleApproval
@@ -46,7 +46,8 @@ dataSources:
           handler: handleLastPrizeDraw
         - event: LastPrizeWinner(uint256,uint256[])
           handler: handleLastPrizeWinner
-        - event: NewSeries(indexed uint256,string,uint256,uint256,uint256,uint256,bool,uint256,uint256,string,string,string,string,address,bool,bool)
+        - event: NewSeries(indexed
+            uint256,string,uint256,uint256,uint256,uint256,bool,uint256,uint256,string,string,string,string,address,bool,bool)
           handler: handleNewSeries
         - event: RefundSeries(indexed uint256,bool)
           handler: handleRefundSeries
@@ -60,7 +61,8 @@ dataSources:
           handler: handleTransfer
         - event: UpdatePrize(indexed uint256,uint256,uint256)
           handler: handleUpdatePrize
-        - event: UpdateSeriesInformation(indexed uint256,bool,uint256,uint256,string,string,string,string)
+        - event: UpdateSeriesInformation(indexed
+            uint256,bool,uint256,uint256,string,string,string,string)
           handler: handleUpdateSeriesInformation
         - event: UpdateSeriesLastPrizeOwner(indexed uint256,address[])
           handler: handleUpdateSeriesLastPrizeOwner
@@ -68,7 +70,7 @@ dataSources:
           handler: handleUpdateSeriesRemainingTicketNumbers
         - event: UpdateTicketStatus(uint256,uint256,uint256,bool,bool)
           handler: handleUpdateTicketStatus
-      file: ./src/ichichain.ts
+      file: ICHICHAIN/ICHICHAIN.wasm
   - kind: ethereum
     name: RevealOnChainData
     network: matic
@@ -85,13 +87,13 @@ dataSources:
         - RevealDrawSent
       abis:
         - name: ICHICHAIN
-          file: ./abis/ICHICHAIN.json
+          file: RevealOnChainData/abis/ICHICHAIN.json
       eventHandlers:
         - event: RevealDrawFulfilled(uint256,uint256,uint256[])
           handler: handleRevealDrawFulfilled
         - event: RevealDrawSent(uint256,uint256[])
           handler: handleRevealDrawSent
-      file: ./src/onChainData.ts
+      file: RevealOnChainData/RevealOnChainData.wasm
 templates:
   - kind: file/ipfs
     name: IpfsContent
@@ -105,6 +107,6 @@ templates:
         - IchibanKujiSubPrize
       abis:
         - name: Contract
-          file: ./abis/ICHICHAIN.json
+          file: IpfsContent/abis/ICHICHAIN.json
       handler: handleIchibanSeries
-      file: ./src/ichichain.ts
+      file: ICHICHAIN/ICHICHAIN.wasm
