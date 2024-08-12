@@ -49,7 +49,7 @@ import {
   DataSourceTemplate,
   JSONValueKind,
   store,
-  Address
+  Address,
 } from "@graphprotocol/graph-ts";
 
 const SERIES_ID_KEY = "seriesID";
@@ -166,7 +166,6 @@ export function handleNewSeries(event: NewSeriesEvent): void {
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
 
-  entity.save();
   let ipfsIndex = entity.seriesMetaDataURI.indexOf("/ipfs/");
   log.debug("ipfsIndex: {}", [ipfsIndex.toString()]);
   if (ipfsIndex == -1) return;
@@ -179,8 +178,11 @@ export function handleNewSeries(event: NewSeriesEvent): void {
   if (ipfsIndex != -1) {
     log.debug("IPFS Index: {}", [ipfsIndex.toString()]);
     let hash = entity.seriesMetaDataURI.slice(ipfsIndex + 6);
+    entity.recentIPFSHash = Bytes.fromUTF8(hash);
+    entity.currentIchibanSeries = Bytes.fromUTF8(hash);
     DataSourceTemplate.createWithContext("IpfsContent", [hash], context);
   }
+  entity.save();
 }
 
 export function handleLastPrizeWinner(event: LastPrizeWinnerEvent): void {
@@ -215,8 +217,8 @@ export function handleIchibanSeries(content: Bytes): void {
   let ctx = dataSource.context();
   let seriesID = ctx.getBytes(SERIES_ID_KEY);
 
-  let newIchibanSeries = new IchibanSeries(seriesID);
-  newIchibanSeries.id = seriesID;
+  let newIchibanSeries = new IchibanSeries(Bytes.fromUTF8(hash));
+  newIchibanSeries.id = Bytes.fromUTF8(hash);
   newIchibanSeries.hash = hash;
   // write in content for testing
   // newIchibanSeries.content = content.toString();
@@ -292,11 +294,11 @@ export function handleIchibanSeries(content: Bytes): void {
               // newPrize id need to be unique
               if (type) {
                 newPrize.id = seriesID.concat(
-                  Bytes.fromUTF8("prize" + type.toString())
+                  Bytes.fromUTF8(hash + type.toString())
                 );
               }
               newPrize.hash = hash;
-              newPrize.belongSeries = seriesID; // Linking each prize back to its series
+              newPrize.belongSeries = Bytes.fromUTF8(hash); // Linking each prize back to its series
               newPrize.prizeId = prizeId ? prizeId.toString() : null;
               newPrize.type = type ? type.toString() : null;
               newPrize.twGroupName = twGroupName
@@ -359,13 +361,13 @@ export function handleIchibanSeries(content: Bytes): void {
                     let newSubPrize = new IchibanKujiSubPrize(seriesID);
                     if (type && subPrizeId) {
                       newSubPrize.id = seriesID.concat(
-                        Bytes.fromUTF8("subPrize" + subPrizeId.toString())
+                        Bytes.fromUTF8(hash + subPrizeId.toString())
                       );
                     }
                     newSubPrize.hash = hash;
                     if (type) {
                       newSubPrize.belongIchibanPrize = seriesID.concat(
-                        Bytes.fromUTF8("prize" + type.toString())
+                        Bytes.fromUTF8(hash + type.toString())
                       );
                     }
                     newSubPrize.subPrizeId = subPrizeId
@@ -417,7 +419,12 @@ export function handleNewTicketStatus(event: NewTicketStatusEvent): void {
   let ID = event.params.seriesID.toString();
 
   entity.belongSeries = Bytes.fromUTF8(ID);
-  entity.belongIchibanSeries = Bytes.fromUTF8(ID);
+
+  // load newSeries to get currentHash
+  let newSeries = NewSeries.load(Bytes.fromUTF8(ID));
+  if (newSeries && newSeries.currentIchibanSeries) {
+    entity.belongIchibanSeries = newSeries.recentIPFSHash;
+  }
 
   // check if tokenRevealedPrize is 999, then set belongIchibanSubPrize
   if (
@@ -425,9 +432,14 @@ export function handleNewTicketStatus(event: NewTicketStatusEvent): void {
     event.params.tokenRevealedPrize == BigInt.fromString("90")
   ) {
     let prizeID = Bytes.fromUTF8(event.params.seriesID.toString());
-    entity.belongIchibanSubPrize = prizeID.concat(
-      Bytes.fromUTF8("subPrize" + event.params.tokenRevealedPrize.toString())
-    );
+    if (newSeries) {
+      entity.belongIchibanSubPrize = prizeID.concat(
+        Bytes.fromUTF8(
+          newSeries.recentIPFSHash.toString() +
+            event.params.tokenRevealedPrize.toString()
+        )
+      );
+    }
   }
 
   entity.save();
@@ -550,6 +562,7 @@ export function handleUpdateSeriesInformation(
 
   // update seriesMetaDataURI in NewSeries entity
   let seriesID = event.params.seriesID.toString();
+  let creatNewIPFS = false;
   let updateSeries = NewSeries.load(Bytes.fromUTF8(seriesID));
   if (updateSeries) {
     updateSeries.isGoodsArrived = event.params.isGoodsArrived;
@@ -558,7 +571,31 @@ export function handleUpdateSeriesInformation(
     updateSeries.exchangeTokenURI = event.params.exchangeTokenURI;
     updateSeries.unrevealTokenURI = event.params.unrevealTokenURI;
     updateSeries.revealTokenURI = event.params.revealTokenURI;
+    if (event.params.seriesMetaDataURI != updateSeries.seriesMetaDataURI) {
+      creatNewIPFS = true;
+    }
     updateSeries.seriesMetaDataURI = event.params.seriesMetaDataURI;
+    let ipfsIndex = event.params.seriesMetaDataURI.indexOf("/ipfs/");
+    let hash = event.params.seriesMetaDataURI.slice(ipfsIndex + 6);
+    updateSeries.recentIPFSHash = Bytes.fromUTF8(hash);
+    updateSeries.currentIchibanSeries = Bytes.fromUTF8(hash);
+
+    if (creatNewIPFS) {
+      log.debug("ipfsIndex: {}", [ipfsIndex.toString()]);
+      if (ipfsIndex == -1) return;
+
+      let context = new DataSourceContext();
+      let seriesID = Bytes.fromUTF8(event.params.seriesID.toString());
+      context.setBytes(SERIES_ID_KEY, seriesID);
+      log.debug("context: {}", [entity.id.toString()]);
+      // "https://lime-basic-thrush-351.mypinata.cloud/ipfs/QmYxweAJixyVVAeQeGf6y8CVk4GmUBTfNiVJvusgcaUuMU/series10.json" is the example URI
+      // "https://lime-basic-thrush-351.mypinata.cloud/ipfs/QmXqCGcxXxpf67wRswRPvY3Xm8RpicXDe3JtfJ6m2rnyHf is the new example URI
+      if (ipfsIndex != -1) {
+        log.debug("IPFS Index: {}", [ipfsIndex.toString()]);
+        DataSourceTemplate.createWithContext("IpfsContent", [hash], context);
+      }
+    }
+
     updateSeries.save();
   }
 }
@@ -570,8 +607,10 @@ export function handleUpdateSeriesLastPrizeOwner(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
   entity.seriesID = event.params.seriesID;
-  // address[] to bytes[] 
-  entity.lastPrizeOwner = event.params.lastPrizeOwner.map<Bytes>((e: Bytes) => e)
+  // address[] to bytes[]
+  entity.lastPrizeOwner = event.params.lastPrizeOwner.map<Bytes>(
+    (e: Bytes) => e
+  );
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
@@ -582,7 +621,9 @@ export function handleUpdateSeriesLastPrizeOwner(
   let seriesID = event.params.seriesID.toString();
   let updateSeries = NewSeries.load(Bytes.fromUTF8(seriesID));
   if (updateSeries) {
-    updateSeries.lastPrizeOwner = event.params.lastPrizeOwner.map<Bytes>((e: Bytes) => e)
+    updateSeries.lastPrizeOwner = event.params.lastPrizeOwner.map<Bytes>(
+      (e: Bytes) => e
+    );
     updateSeries.save();
   }
 }
@@ -618,15 +659,25 @@ export function handleUpdateTicketStatus(event: UpdateTicketStatusEvent): void {
     Bytes.fromUTF8(updateTicketStatusID)
   );
 
+  let ID = event.params.seriesID.toString();
+  // load newSeries to get currentHash
+  let newSeries = NewSeries.load(Bytes.fromUTF8(ID));
+
   if (updateTicketStatus) {
     updateTicketStatus.tokenRevealedPrize = event.params.tokenRevealedPrize;
     updateTicketStatus.tokenExchange = event.params.tokenExchange;
     updateTicketStatus.tokenRevealed = event.params.tokenRevealed;
     // update ticket status belongIchibanPrize
     let prizeID = Bytes.fromUTF8(event.params.seriesID.toString());
-    updateTicketStatus.belongIchibanSubPrize = prizeID.concat(
-      Bytes.fromUTF8("subPrize" + event.params.tokenRevealedPrize.toString())
-    );
+    if (newSeries) {
+      updateTicketStatus.belongIchibanSeries = newSeries.recentIPFSHash;
+      updateTicketStatus.belongIchibanSubPrize = prizeID.concat(
+        Bytes.fromUTF8(
+          newSeries.recentIPFSHash.toString() +
+            event.params.tokenRevealedPrize.toString()
+        )
+      );
+    }
     updateTicketStatus.save();
   }
 

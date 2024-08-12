@@ -1208,6 +1208,36 @@ export class NewSeries extends Entity {
     this.set("transactionHash", Value.fromBytes(value));
   }
 
+  get recentIPFSHash(): Bytes {
+    let value = this.get("recentIPFSHash");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set recentIPFSHash(value: Bytes) {
+    this.set("recentIPFSHash", Value.fromBytes(value));
+  }
+
+  get currentIchibanSeries(): Bytes | null {
+    let value = this.get("currentIchibanSeries");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set currentIchibanSeries(value: Bytes | null) {
+    if (!value) {
+      this.unset("currentIchibanSeries");
+    } else {
+      this.set("currentIchibanSeries", Value.fromBytes(<Bytes>value));
+    }
+  }
+
   get NewPrizes(): NewSubPrizeLoader {
     return new NewSubPrizeLoader(
       "NewSeries",
