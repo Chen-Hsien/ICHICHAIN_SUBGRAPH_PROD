@@ -260,3 +260,290 @@ type UpdateTicketStatus @entity(immutable: true) {
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
+type ContractApproval @entity(immutable: true) {
+  id: Bytes!
+  owner: Bytes! # address
+  approved: Bytes! # address
+  tokenId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type ContractApprovalForAll @entity(immutable: true) {
+  id: Bytes!
+  owner: Bytes! # address
+  operator: Bytes! # address
+  approved: Boolean! # bool
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+
+
+type RoleAdminChanged @entity(immutable: true) {
+  id: Bytes!
+  role: Bytes! # bytes32
+  previousAdminRole: Bytes! # bytes32
+  newAdminRole: Bytes! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type RoleGranted @entity(immutable: true) {
+  id: Bytes!
+  role: Bytes! # bytes32
+  account: Bytes! # address
+  sender: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type RoleRevoked @entity(immutable: true) {
+  id: Bytes!
+  role: Bytes! # bytes32
+  account: Bytes! # address
+  sender: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type ContractTransfer @entity(immutable: true) {
+  id: Bytes!
+  from: Bytes! # address
+  to: Bytes! # address
+  tokenId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoucherType @entity {
+  id: Bytes!
+  voucherTypeId: BigInt! # uint256
+  amount: BigInt! # uint256
+  maxPerUser: BigInt! # uint256
+  tokenURI: String! # string
+  isActive: Boolean! # To track if this type is still active
+  totalMinted: BigInt! # To track total minted vouchers of this type
+  vouchers: [Voucher!]! @derivedFrom(field: "voucherType")
+  createdAt: BigInt!
+  updatedAt: BigInt
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoucherMetadata @entity {
+  id: Bytes!
+  hash: String!
+  voucher: Voucher!
+  name: String
+  description: String
+  animationUrl: String
+  image: String
+}
+
+type Voucher @entity {
+  id: Bytes!
+  tokenId: BigInt! # uint256
+  owner: Bytes! # address
+  voucherType: VoucherType!
+  isRedeemed: Boolean!
+  metadataURI: String
+  recentIPFSHash: Bytes
+  metadata: VoucherMetadata @derivedFrom(field: "voucher")
+  createdAt: BigInt!
+  redeemedAt: BigInt
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoucherMinted @entity(immutable: true) {
+  id: Bytes!
+  voucher: Voucher! # Reference to the minted voucher
+  recipient: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoucherTotalRedeemed @entity(immutable: true) {
+  id: Bytes!
+  vouchers: [Voucher!]! # Reference to the redeemed vouchers
+  redeemer: Bytes! # address
+  totalAmount: BigInt! # uint256
+  additionalReward: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoucherTransferred @entity(immutable: true) {
+  id: Bytes!
+  voucher: Voucher! # Reference to the transferred voucher
+  from: Bytes! # address
+  to: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoucherTypeCreated @entity(immutable: true) {
+  id: Bytes!
+  voucherType: VoucherType! # Reference to the created voucher type
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoucherTypeUpdated @entity(immutable: true) {
+  id: Bytes!
+  voucherType: VoucherType! # Reference to the updated voucher type
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VouchersIssuedFromSubscription @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes! # address
+  voucherTypeIds: [BigInt!]! # uint256[]
+  amounts: [BigInt!]! # uint256[]
+  totalAmount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+# Main entity for membership levels
+type MembershipLevel @entity {
+  id: Bytes!
+  levelIndex: BigInt! # uint256
+  name: String! # string
+  threshold: BigInt! # uint256
+  membershipTokenURI: String! # string
+  rewardBasisPoints: BigInt! # uint256
+  isActive: Boolean! # Track if level is active
+  totalMembers: BigInt! # Track total members in this level
+  members: [MembershipNFT!]! @derivedFrom(field: "level")
+  createdAt: BigInt!
+  updatedAt: BigInt
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+# Main entity for membership NFTs
+type MembershipNFT @entity {
+  id: Bytes!
+  tokenId: BigInt! # uint256
+  owner: Bytes! # address
+  level: MembershipLevel!
+  expiryDate: BigInt! # uint256
+  isActive: Boolean! # Track if membership is active
+  lastActivityTime: BigInt!
+  createdAt: BigInt!
+  updatedAt: BigInt
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  transferHistory: [MembershipTransferred!]! @derivedFrom(field: "membershipNFT")
+  renewalHistory: [MembershipRenewed!]! @derivedFrom(field: "membershipNFT")
+  metadata: MembershipMetadata @derivedFrom(field: "membershipNFT")
+}
+
+# Event entities
+type MembershipExpired @entity(immutable: true) {
+  id: Bytes!
+  membershipNFT: MembershipNFT!
+  user: Bytes! # address
+  tokenId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MembershipLevelCreated @entity(immutable: true) {
+  id: Bytes!
+  membershipLevel: MembershipLevel!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MembershipLevelUpdated @entity(immutable: true) {
+  id: Bytes!
+  membershipLevel: MembershipLevel!
+  previousThreshold: BigInt! # uint256
+  previousRewardBasisPoints: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MembershipNFTBurned @entity(immutable: true) {
+  id: Bytes!
+  membershipNFT: MembershipNFT!
+  user: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MembershipNFTMinted @entity(immutable: true) {
+  id: Bytes!
+  membershipNFT: MembershipNFT!
+  user: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MembershipRenewed @entity(immutable: true) {
+  id: Bytes!
+  membershipNFT: MembershipNFT!
+  user: Bytes! # address
+  tokenId: BigInt! # uint256
+  newExpiryDate: BigInt! # uint256
+  previousExpiryDate: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MembershipTransferred @entity(immutable: true) {
+  id: Bytes!
+  membershipNFT: MembershipNFT!
+  tokenId: BigInt! # uint256
+  from: Bytes! # address
+  to: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MembershipUpgraded @entity(immutable: true) {
+  id: Bytes!
+  membershipNFT: MembershipNFT!
+  user: Bytes! # address
+  tokenId: BigInt! # uint256
+  previousLevel: MembershipLevel!
+  newLevel: MembershipLevel!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MembershipMetadata @entity {
+  id: Bytes!
+  membershipNFT: MembershipNFT!
+  name: String
+  description: String
+  image: String
+}

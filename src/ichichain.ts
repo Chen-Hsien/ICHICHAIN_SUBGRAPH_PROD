@@ -179,7 +179,11 @@ export function handleNewSeries(event: NewSeriesEvent): void {
     log.debug("IPFS Index: {}", [ipfsIndex.toString()]);
     let hash = entity.seriesMetaDataURI.slice(ipfsIndex + 6);
     entity.recentIPFSHash = Bytes.fromUTF8(hash);
-    entity.currentIchibanSeries = Bytes.fromUTF8(hash);
+    
+    // 使用相同的 ID 生成邏輯
+    let uniqueId = entity.id.concat(Bytes.fromUTF8(hash));
+    entity.currentIchibanSeries = uniqueId;
+    
     DataSourceTemplate.createWithContext("IpfsContent", [hash], context);
   }
   entity.save();
@@ -211,20 +215,19 @@ export function handleLastPrizeWinner(event: LastPrizeWinnerEvent): void {
 }
 
 export function handleIchibanSeries(content: Bytes): void {
-  log.info("Series Content: {}", [content.toString()]);
   let hash = dataSource.stringParam();
-  log.info("Series Hash: {}", [hash]);
   let ctx = dataSource.context();
   let seriesID = ctx.getBytes(SERIES_ID_KEY);
 
-  let newIchibanSeries = new IchibanSeries(Bytes.fromUTF8(hash));
-  newIchibanSeries.id = Bytes.fromUTF8(hash);
+  // 創建唯一ID，使用 seriesID 和 hash 的組合
+  let uniqueId = seriesID.concat(Bytes.fromUTF8(hash));
+  let newIchibanSeries = new IchibanSeries(uniqueId);
+  
+  // 保存原始 hash 值作為參考
   newIchibanSeries.hash = hash;
-  // write in content for testing
-  // newIchibanSeries.content = content.toString();
-
+  
   const value = json.fromBytes(content).toObject();
-
+  
   if (value) {
     const IchibanSeries = value.get("IchibanSeries");
     if (IchibanSeries) {
@@ -265,9 +268,8 @@ export function handleIchibanSeries(content: Bytes): void {
   }
   newIchibanSeries.save();
 
+  // 在處理 IchibanKujiPrize 時也需要調整 ID 生成方式
   if (value) {
-    // Assuming IchibanKujiOBJ extraction has already been done
-
     const IchibanKuji = value.get("IchibanKuji");
     if (IchibanKuji) {
       const IchibanKujiOBJ = IchibanKuji.toObject();
@@ -289,16 +291,15 @@ export function handleIchibanSeries(content: Bytes): void {
               const enGroupDescription = prizeOBJ.get("enGroupDescription");
               const isBlindBox = prizeOBJ.get("isBlindBox");
 
-              // auto generate ID from seriesID and prizeID
-              let newPrize = new IchibanKujiPrize(seriesID);
-              // newPrize id need to be unique
+              // 修改 prize ID 生成方式
+              let newPrize = new IchibanKujiPrize(uniqueId);
               if (type) {
-                newPrize.id = seriesID.concat(
-                  Bytes.fromUTF8(hash + type.toString())
+                newPrize.id = uniqueId.concat(
+                  Bytes.fromUTF8(type.toString())
                 );
               }
               newPrize.hash = hash;
-              newPrize.belongSeries = Bytes.fromUTF8(hash); // Linking each prize back to its series
+              newPrize.belongSeries = uniqueId; // 使用新的唯一ID
               newPrize.prizeId = prizeId ? prizeId.toString() : null;
               newPrize.type = type ? type.toString() : null;
               newPrize.twGroupName = twGroupName
@@ -337,15 +338,15 @@ export function handleIchibanSeries(content: Bytes): void {
                 ? enGroupDescription.toString()
                 : null;
               newPrize.isBlindBox = isBlindBox ? isBlindBox.toBool() : false;
-              log.info("IchibanKujiPrize ID: {}", [seriesID.toString()]);
+              log.info("IchibanKujiPrize ID: {}", [uniqueId.toString()]);
 
               newPrize.save();
 
               const subPrize = prizeOBJ.get("subPrize");
 
               if (subPrize) {
-                for (let i = 0; i < subPrize.toArray().length; i++) {
-                  const subPrizeOBJ = subPrize.toArray()[i].toObject();
+                for (let j = 0; j < subPrize.toArray().length; j++) {
+                  const subPrizeOBJ = subPrize.toArray()[j].toObject();
                   if (subPrizeOBJ) {
                     const subPrizeId = subPrizeOBJ.get("subPrizeId");
                     const prizeGroup = subPrizeOBJ.get("prizeGroup");
@@ -358,16 +359,17 @@ export function handleIchibanSeries(content: Bytes): void {
                     const twDescription = subPrizeOBJ.get("twDescription");
                     const enDescription = subPrizeOBJ.get("enDescription");
 
-                    let newSubPrize = new IchibanKujiSubPrize(seriesID);
+                    // 修改 subPrize ID 生成方式
+                    let newSubPrize = new IchibanKujiSubPrize(uniqueId);
                     if (type && subPrizeId) {
-                      newSubPrize.id = seriesID.concat(
-                        Bytes.fromUTF8(hash + subPrizeId.toString())
+                      newSubPrize.id = uniqueId.concat(
+                        Bytes.fromUTF8(subPrizeId.toString())
                       );
                     }
                     newSubPrize.hash = hash;
                     if (type) {
-                      newSubPrize.belongIchibanPrize = seriesID.concat(
-                        Bytes.fromUTF8(hash + type.toString())
+                      newSubPrize.belongIchibanPrize = uniqueId.concat(
+                        Bytes.fromUTF8(type.toString())
                       );
                     }
                     newSubPrize.subPrizeId = subPrizeId
@@ -423,7 +425,9 @@ export function handleNewTicketStatus(event: NewTicketStatusEvent): void {
   // load newSeries to get currentHash
   let newSeries = NewSeries.load(Bytes.fromUTF8(ID));
   if (newSeries && newSeries.currentIchibanSeries) {
-    entity.belongIchibanSeries = newSeries.recentIPFSHash;
+    // 使用相同的 ID 生成邏輯
+    let uniqueId = Bytes.fromUTF8(ID).concat(newSeries.recentIPFSHash);
+    entity.belongIchibanSeries = uniqueId;
   }
 
   // check if tokenRevealedPrize is 999, then set belongIchibanSubPrize
@@ -578,7 +582,10 @@ export function handleUpdateSeriesInformation(
     let ipfsIndex = event.params.seriesMetaDataURI.indexOf("/ipfs/");
     let hash = event.params.seriesMetaDataURI.slice(ipfsIndex + 6);
     updateSeries.recentIPFSHash = Bytes.fromUTF8(hash);
-    updateSeries.currentIchibanSeries = Bytes.fromUTF8(hash);
+
+    // 使用相同的 ID 生成邏輯
+    let uniqueId = updateSeries.id.concat(Bytes.fromUTF8(hash));
+    updateSeries.currentIchibanSeries = uniqueId;
 
     if (creatNewIPFS) {
       log.debug("ipfsIndex: {}", [ipfsIndex.toString()]);
@@ -670,12 +677,13 @@ export function handleUpdateTicketStatus(event: UpdateTicketStatusEvent): void {
     // update ticket status belongIchibanPrize
     let prizeID = Bytes.fromUTF8(event.params.seriesID.toString());
     if (newSeries) {
-      updateTicketStatus.belongIchibanSeries = newSeries.recentIPFSHash;
-      updateTicketStatus.belongIchibanSubPrize = prizeID.concat(
-        Bytes.fromUTF8(
-          newSeries.recentIPFSHash.toString() +
-            event.params.tokenRevealedPrize.toString()
-        )
+      // 使用相同的 ID 生成邏輯
+      let uniqueId = prizeID.concat(newSeries.recentIPFSHash);
+      updateTicketStatus.belongIchibanSeries = uniqueId;
+      
+      // 對於 belongIchibanSubPrize，也使用一致的 ID 生成邏輯
+      updateTicketStatus.belongIchibanSubPrize = uniqueId.concat(
+        Bytes.fromUTF8(event.params.tokenRevealedPrize.toString())
       );
     }
     updateTicketStatus.save();

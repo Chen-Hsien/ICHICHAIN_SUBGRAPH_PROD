@@ -11,3 +11,13 @@ export class IpfsContent extends DataSourceTemplate {
     DataSourceTemplate.createWithContext("IpfsContent", [cid], context);
   }
 }
+
+export class DoudoNFTIpfsContent extends DataSourceTemplate {
+  static create(cid: string): void {
+    DataSourceTemplate.create("DoudoNFTIpfsContent", [cid]);
+  }
+
+  static createWithContext(cid: string, context: DataSourceContext): void {
+    DataSourceTemplate.createWithContext("DoudoNFTIpfsContent", [cid], context);
+  }
+}

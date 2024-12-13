@@ -46,7 +46,8 @@ dataSources:
           handler: handleLastPrizeDraw
         - event: LastPrizeWinner(uint256,uint256[])
           handler: handleLastPrizeWinner
-        - event: NewSeries(indexed uint256,string,uint256,uint256,uint256,uint256,bool,uint256,uint256,string,string,string,string,address,bool,bool)
+        - event: NewSeries(indexed
+            uint256,string,uint256,uint256,uint256,uint256,bool,uint256,uint256,string,string,string,string,address,bool,bool)
           handler: handleNewSeries
         - event: RefundSeries(indexed uint256,bool)
           handler: handleRefundSeries
@@ -60,7 +61,8 @@ dataSources:
           handler: handleTransfer
         - event: UpdatePrize(indexed uint256,uint256,uint256)
           handler: handleUpdatePrize
-        - event: UpdateSeriesInformation(indexed uint256,bool,uint256,uint256,string,string,string,string)
+        - event: UpdateSeriesInformation(indexed
+            uint256,bool,uint256,uint256,string,string,string,string)
           handler: handleUpdateSeriesInformation
         - event: UpdateSeriesLastPrizeOwner(indexed uint256,address[])
           handler: handleUpdateSeriesLastPrizeOwner
@@ -92,6 +94,81 @@ dataSources:
         - event: RevealDrawSent(uint256,uint256[])
           handler: handleRevealDrawSent
       file: ./src/onChainData.ts
+  - kind: ethereum
+    name: Contract
+    network: matic
+    source:
+      address: "0x25B983DD08C9F534D3cda1289DD2B0047732c06B"
+      abi: Contract
+      startBlock: 64961334	
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ContractApproval
+        - ContractApprovalForAll
+        - MembershipExpired
+        - MembershipLevelCreated
+        - MembershipLevelUpdated
+        - MembershipNFTBurned
+        - MembershipNFTMinted
+        - MembershipRenewed
+        - MembershipTransferred
+        - MembershipUpgraded
+        - RoleAdminChanged
+        - RoleGranted
+        - RoleRevoked
+        - ContractTransfer
+        - VoucherMinted
+        - VoucherTotalRedeemed
+        - VoucherTransferred
+        - VoucherTypeCreated
+        - VoucherTypeUpdated
+        - VouchersIssuedFromSubscription
+      abis:
+        - name: Contract
+          file: ./abis/Contract.json
+      eventHandlers:
+        - event: Approval(indexed address,indexed address,indexed uint256)
+          handler: handleApproval
+        - event: ApprovalForAll(indexed address,indexed address,bool)
+          handler: handleApprovalForAll
+        - event: MembershipExpired(address,uint256)
+          handler: handleMembershipExpired
+        - event: MembershipLevelCreated(uint256,string,uint256,string,uint256)
+          handler: handleMembershipLevelCreated
+        - event: MembershipLevelUpdated(uint256,uint256,string,uint256)
+          handler: handleMembershipLevelUpdated
+        - event: MembershipNFTBurned(address,uint256)
+          handler: handleMembershipNFTBurned
+        - event: MembershipRenewed(address,uint256,uint256)
+          handler: handleMembershipRenewed
+        - event: MembershipTransferred(address,address,uint256,string)
+          handler: handleMembershipTransferred
+        - event: MembershipUpgraded(address,uint256,uint256,string)
+          handler: handleMembershipUpgraded
+        - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
+          handler: handleRoleAdminChanged
+        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleGranted
+        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleRevoked
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+        - event: VoucherMinted(uint256,address,uint256)
+          handler: handleVoucherMinted
+        - event: VoucherTotalRedeemed(uint256[],address,uint256,uint256)
+          handler: handleVoucherTotalRedeemed
+        - event: VoucherTransferred(address,address,uint256)
+          handler: handleVoucherTransferred
+        - event: VoucherTypeCreated(uint256,uint256,uint256,string)
+          handler: handleVoucherTypeCreated
+        - event: VoucherTypeUpdated(uint256,uint256,uint256,string)
+          handler: handleVoucherTypeUpdated
+        - event: VouchersIssuedFromSubscription(indexed address,uint256[],uint256[],uint256)
+          handler: handleVouchersIssuedFromSubscription
+      file: ./src/contract.ts
 templates:
   - kind: file/ipfs
     name: IpfsContent
@@ -108,3 +185,21 @@ templates:
           file: ./abis/ICHICHAIN.json
       handler: handleIchibanSeries
       file: ./src/ichichain.ts
+  - kind: file/ipfs
+    name: DoudoNFTIpfsContent
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - MembershipMetadata
+        - VoucherMetadata
+        - VoucherMetadata
+        - MembershipLevel     # Add this
+        - Membership         # Add this if needed
+        - Voucher   
+      abis:
+       - name: doudonft
+         file: ./abis/Contract.json
+      handler: handleDoudoNFTContent
+      file: ./src/contract.ts
