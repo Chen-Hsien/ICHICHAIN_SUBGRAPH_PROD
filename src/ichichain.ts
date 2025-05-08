@@ -245,7 +245,7 @@ export function handleIchibanSeries(content: Bytes): void {
 
         newIchibanSeries.belongSeries = seriesID;
         newIchibanSeries.onChainSeriesID = onChainSeriesID
-          ? BigInt.fromString(onChainSeriesID.toString())
+          ? (onChainSeriesID.toString().trim() !== "" ? BigInt.fromString(onChainSeriesID.toString()) : null)
           : null;
         newIchibanSeries.twContent = twContent ? twContent.toString() : null;
         newIchibanSeries.enContent = enContent ? enContent.toString() : null;
