@@ -38,7 +38,7 @@ type ConsecutiveTransfer @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type NewSubPrize @entity {
+type NewSubPrize @entity(immutable: false) {
   id: Bytes!
   seriesID: BigInt! # uint256
   subPrizeID: BigInt! # uint256
@@ -51,7 +51,7 @@ type NewSubPrize @entity {
   belongSeries: NewSeries!
 }
 
-type LastPrizeDraw @entity {
+type LastPrizeDraw @entity(immutable: false) {
   id: Bytes!
   requestId: BigInt! # uint256
   seriesID: BigInt! # uint256
@@ -71,7 +71,7 @@ type LastPrizeWinner @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type NewSeries @entity {
+type NewSeries @entity(immutable: false) {
   id: Bytes!
   seriesID: BigInt! # uint256
   seriesName: String! # string
@@ -149,7 +149,7 @@ type IchibanKujiSubPrize @entity(immutable: true) {
   enDescription: String
 }
 
-type NewTicketStatus @entity {
+type NewTicketStatus @entity(immutable: false) {
   id: Bytes!
   tokenID: BigInt! # uint256
   seriesID: BigInt! # uint256
@@ -184,13 +184,65 @@ type RevealDrawFulfilled @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type RevealDrawSent @entity {
+type RevealDrawSent @entity(immutable: false) {
   id: Bytes!
   requestId: BigInt! # uint256
   seriesID: BigInt # uint256
   tokenIDs: [BigInt!]! # uint256[]
   randomWords: [BigInt!]! # uint256[]
   subPrizesRemainingQuantities: [BigInt!] # uint256[]
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type RevealVRFRequest @entity(immutable: false) {
+  id: Bytes!
+  requestId: BigInt! # uint256
+  seriesID: BigInt # uint256
+  tokenIDs: [BigInt!]! # uint256[]
+  randomWords: [BigInt!]! # uint256[]
+  subPrizeIDs: [BigInt!]! # uint256[]
+  subPrizeRemainingQuantitiesBefore: [BigInt!]! # uint256[]
+  subPrizeRemainingQuantitiesAfter: [BigInt!]! # uint256[]
+  isFulfilled: Boolean!
+  sentBlockNumber: BigInt!
+  sentBlockTimestamp: BigInt!
+  sentTransactionHash: Bytes!
+  fulfilledBlockNumber: BigInt
+  fulfilledBlockTimestamp: BigInt
+  fulfilledTransactionHash: Bytes
+  tokenResults: [RevealVRFTokenResult!]! @derivedFrom(field: "revealRequest")
+  prizeDistributions: [RevealVRFPrizeDistribution!]!
+    @derivedFrom(field: "revealRequest")
+}
+
+type RevealVRFTokenResult @entity(immutable: false) {
+  id: Bytes!
+  revealRequest: RevealVRFRequest!
+  requestId: BigInt! # uint256
+  seriesID: BigInt # uint256
+  tokenID: BigInt! # uint256
+  revealIndex: BigInt! # index in request tokenIDs array
+  vrfRandomWord: BigInt # uint256
+  revealedPrizeID: BigInt # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type RevealVRFPrizeDistribution @entity(immutable: true) {
+  id: Bytes!
+  revealRequest: RevealVRFRequest!
+  requestId: BigInt! # uint256
+  seriesID: BigInt! # uint256
+  subPrizeID: BigInt! # uint256
+  prizeGroup: String
+  subPrizeName: String
+  quantityBefore: BigInt! # uint256
+  quantityAfter: BigInt! # uint256
+  distributedByQuantityDelta: BigInt! # uint256
+  distributedByTokenResults: BigInt! # uint256
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -322,7 +374,7 @@ type ContractTransfer @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type VoucherType @entity {
+type VoucherType @entity(immutable: false) {
   id: Bytes!
   voucherTypeId: BigInt! # uint256
   amount: BigInt! # uint256
@@ -338,7 +390,7 @@ type VoucherType @entity {
   transactionHash: Bytes!
 }
 
-type VoucherMetadata @entity {
+type VoucherMetadata @entity(immutable: false) {
   id: Bytes!
   hash: String!
   voucher: Voucher!
@@ -348,7 +400,7 @@ type VoucherMetadata @entity {
   image: String
 }
 
-type Voucher @entity {
+type Voucher @entity(immutable: false) {
   id: Bytes!
   tokenId: BigInt! # uint256
   owner: Bytes! # address
@@ -422,7 +474,7 @@ type VouchersIssuedFromSubscription @entity(immutable: true) {
 }
 
 # Main entity for membership levels
-type MembershipLevel @entity {
+type MembershipLevel @entity(immutable: false) {
   id: Bytes!
   levelIndex: BigInt! # uint256
   name: String! # string
@@ -440,7 +492,7 @@ type MembershipLevel @entity {
 }
 
 # Main entity for membership NFTs
-type MembershipNFT @entity {
+type MembershipNFT @entity(immutable: false) {
   id: Bytes!
   tokenId: BigInt! # uint256
   owner: Bytes! # address
@@ -540,7 +592,7 @@ type MembershipUpgraded @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type MembershipMetadata @entity {
+type MembershipMetadata @entity(immutable: false) {
   id: Bytes!
   membershipNFT: MembershipNFT!
   name: String
