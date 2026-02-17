@@ -85,6 +85,9 @@ dataSources:
       entities:
         - RevealDrawFulfilled
         - RevealDrawSent
+        - RevealVRFRequest
+        - RevealVRFTokenResult
+        - RevealVRFPrizeDistribution
       abis:
         - name: ICHICHAIN
           file: ./abis/ICHICHAIN.json
