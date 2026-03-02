@@ -444,7 +444,7 @@ type MembershipNFT @entity(immutable: false) {
   id: Bytes!
   tokenId: BigInt! # uint256
   owner: Bytes! # address
-  level: MembershipLevel!
+  level: MembershipLevel
   expiryDate: BigInt! # uint256
   isActive: Boolean! # Track if membership is active
   lastActivityTime: BigInt!
@@ -471,7 +471,7 @@ type MembershipExpired @entity(immutable: true) {
 
 type MembershipLevelCreated @entity(immutable: true) {
   id: Bytes!
-  membershipLevel: MembershipLevel!
+  membershipLevel: MembershipLevel
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -479,7 +479,7 @@ type MembershipLevelCreated @entity(immutable: true) {
 
 type MembershipLevelUpdated @entity(immutable: true) {
   id: Bytes!
-  membershipLevel: MembershipLevel!
+  membershipLevel: MembershipLevel
   previousThreshold: BigInt! # uint256
   previousRewardBasisPoints: BigInt! # uint256
   blockNumber: BigInt!
@@ -533,8 +533,8 @@ type MembershipUpgraded @entity(immutable: true) {
   membershipNFT: MembershipNFT!
   user: Bytes! # address
   tokenId: BigInt! # uint256
-  previousLevel: MembershipLevel!
-  newLevel: MembershipLevel!
+  previousLevel: MembershipLevel
+  newLevel: MembershipLevel
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
