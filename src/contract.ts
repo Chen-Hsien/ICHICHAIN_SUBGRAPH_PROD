@@ -45,8 +45,8 @@ import {
   Voucher,
   MembershipLevel,
   MembershipNFT,
-  MembershipMetadata,
-  VoucherMetadata,
+  // MembershipMetadata,
+  // VoucherMetadata,
 } from "../generated/schema";
 import {
   BigInt,
@@ -101,12 +101,14 @@ export function handleMembershipExpired(event: MembershipExpiredEvent): void {
     membershipNFT.save();
 
     // Update MembershipLevel totalMembers
-    let membershipLevel = MembershipLevel.load(membershipNFT.level);
-    if (membershipLevel) {
-      membershipLevel.totalMembers = membershipLevel.totalMembers.minus(
-        BigInt.fromI32(1)
-      );
-      membershipLevel.save();
+    if (membershipNFT.level) {
+      let membershipLevel = MembershipLevel.load(membershipNFT.level);
+      if (membershipLevel) {
+        membershipLevel.totalMembers = membershipLevel.totalMembers.minus(
+          BigInt.fromI32(1)
+        );
+        membershipLevel.save();
+      }
     }
   }
 
@@ -136,26 +138,30 @@ export function handleMembershipLevelCreated(
   membershipLevel.rewardBasisPoints = event.params.rewardBasisPoints;
   membershipLevel.isActive = true;
   membershipLevel.totalMembers = BigInt.fromI32(0);
-
-  // Handle IPFS metadata
-  let tokenURI = event.params.membershipTokenURI;
-  let ipfsIndex = tokenURI.indexOf("/ipfs/");
-
-  if (ipfsIndex != -1) {
-    let hash = tokenURI.slice(ipfsIndex + 6);
-
-    let context = new DataSourceContext();
-    context.setBytes(MEMBERSHIP_LEVEL_KEY, membershipLevel.id);
-
-    DataSourceTemplate.createWithContext("DoudoNFTIpfsContent", [hash], context);
-  }
-
   membershipLevel.createdAt = event.block.timestamp;
   membershipLevel.blockNumber = event.block.number;
   membershipLevel.blockTimestamp = event.block.timestamp;
   membershipLevel.transactionHash = event.transaction.hash;
 
+  // 重要：在創建模板之前保存實體
   membershipLevel.save();
+
+  // // Handle IPFS metadata
+  // let tokenURI = event.params.membershipTokenURI;
+  // let ipfsIndex = tokenURI.indexOf("/ipfs/");
+
+  // if (ipfsIndex != -1) {
+  //   let hash = tokenURI.slice(ipfsIndex + 6);
+
+  //   let context = new DataSourceContext();
+  //   context.setBytes(MEMBERSHIP_LEVEL_KEY, membershipLevel.id);
+
+  //   DataSourceTemplate.createWithContext(
+  //     "DoudoNFTIpfsContent",
+  //     [hash],
+  //     context
+  //   );
+  // }
 
   let entity = new MembershipLevelCreated(
     event.transaction.hash.concatI32(event.logIndex.toI32())
@@ -204,12 +210,14 @@ export function handleMembershipNFTBurned(
     membershipNFT.save();
 
     // Update MembershipLevel totalMembers
-    let membershipLevel = MembershipLevel.load(membershipNFT.level);
-    if (membershipLevel) {
-      membershipLevel.totalMembers = membershipLevel.totalMembers.minus(
-        BigInt.fromI32(1)
-      );
-      membershipLevel.save();
+    if (membershipNFT.level) {
+      let membershipLevel = MembershipLevel.load(membershipNFT.level);
+      if (membershipLevel) {
+        membershipLevel.totalMembers = membershipLevel.totalMembers.minus(
+          BigInt.fromI32(1)
+        );
+        membershipLevel.save();
+      }
     }
   }
 
@@ -278,9 +286,14 @@ export function handleMembershipUpgraded(event: MembershipUpgradedEvent): void {
   );
   let newLevelId = Bytes.fromUTF8(event.params.level.toString());
   let newLevel = MembershipLevel.load(newLevelId);
+  
+  // 保存舊等級ID，用於事件記錄
+  let previousLevelId: Bytes | null = null;
+  let isNewMember = false;
 
   if (!membershipNFT) {
     // Create new MembershipNFT if it doesn't exist (new member)
+    isNewMember = true;
     membershipNFT = new MembershipNFT(
       Bytes.fromUTF8(event.params.tokenId.toString())
     );
@@ -305,20 +318,25 @@ export function handleMembershipUpgraded(event: MembershipUpgradedEvent): void {
   } else {
     // Update existing membership
     let oldLevelId = membershipNFT.level;
+    previousLevelId = oldLevelId; // 保存舊等級ID
+    
+    if (oldLevelId) {
+      // Only update counts if level actually changed
+      if (!oldLevelId.equals(newLevelId)) {
+        // Update old level count
+        let oldLevel = MembershipLevel.load(oldLevelId);
+        if (oldLevel) {
+          oldLevel.totalMembers = oldLevel.totalMembers.minus(
+            BigInt.fromI32(1)
+          );
+          oldLevel.save();
+        }
 
-    // Only update counts if level actually changed
-    if (oldLevelId != newLevelId) {
-      // Update old level count
-      let oldLevel = MembershipLevel.load(oldLevelId);
-      if (oldLevel) {
-        oldLevel.totalMembers = oldLevel.totalMembers.minus(BigInt.fromI32(1));
-        oldLevel.save();
-      }
-
-      // Update new level count
-      if (newLevel) {
-        newLevel.totalMembers = newLevel.totalMembers.plus(BigInt.fromI32(1));
-        newLevel.save();
+        // Update new level count
+        if (newLevel) {
+          newLevel.totalMembers = newLevel.totalMembers.plus(BigInt.fromI32(1));
+          newLevel.save();
+        }
       }
     }
 
@@ -337,16 +355,14 @@ export function handleMembershipUpgraded(event: MembershipUpgradedEvent): void {
   entity.membershipNFT = membershipNFT.id;
   entity.user = event.params.user;
   entity.tokenId = event.params.tokenId;
-
-  // For new members, previousLevel will be level 0
-  if (!membershipNFT.level) {
-    let level0 = MembershipLevel.load(Bytes.fromUTF8("0"));
-    entity.previousLevel = level0 ? level0.id : Bytes.empty();
-  } else {
-    entity.previousLevel = membershipNFT.level;
-  }
-
   entity.newLevel = newLevelId;
+  
+  // 設置 previousLevel：只有當不是新會員且舊等級與新等級不同時才設置
+  if (!isNewMember && previousLevelId && !previousLevelId.equals(newLevelId)) {
+    entity.previousLevel = previousLevelId;
+  }
+  // 對於新會員或等級沒有變化的情況，previousLevel 保持為 null
+  
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
@@ -567,69 +583,69 @@ export function handleVouchersIssuedFromSubscription(
   entity.save();
 }
 
-export function handleDoudoNFTContent(content: Bytes): void {
-  let context = dataSource.context();
+// export function handleDoudoNFTContent(content: Bytes): void {
+//   let context = dataSource.context();
 
-  // Check which type of content we're dealing with
-  if (context.getBytes(MEMBERSHIP_LEVEL_KEY)) {
-    handleMembershipMetadata(content);
-  } else if (context.getBytes(VOUCHER_KEY)) {
-    handleVoucherMetadata(content);
-  }
-}
+//   // Check which type of content we're dealing with
+//   if (context.getBytes(MEMBERSHIP_LEVEL_KEY)) {
+//     handleMembershipMetadata(content);
+//   } else if (context.getBytes(VOUCHER_KEY)) {
+//     handleVoucherMetadata(content);
+//   }
+// }
 
-export function handleMembershipMetadata(content: Bytes): void {
-  let hash = dataSource.stringParam();
-  let context = dataSource.context();
-  let membershipLevelId = context.getBytes(MEMBERSHIP_LEVEL_KEY);
+// export function handleMembershipMetadata(content: Bytes): void {
+//   let hash = dataSource.stringParam();
+//   let context = dataSource.context();
+//   let membershipLevelId = context.getBytes(MEMBERSHIP_LEVEL_KEY);
 
-  let metadata = new MembershipMetadata(Bytes.fromUTF8(hash));
-  metadata.id = Bytes.fromUTF8(hash);
+//   let metadata = new MembershipMetadata(Bytes.fromUTF8(hash));
+//   metadata.id = Bytes.fromUTF8(hash);
 
-  let membershipLevel = MembershipLevel.load(membershipLevelId);
-  if (!membershipLevel) return;
+//   let membershipLevel = MembershipLevel.load(membershipLevelId);
+//   if (!membershipLevel) return;
 
-  const value = json.fromBytes(content).toObject();
-  if (value) {
-    // Handle basic metadata fields
-    const name = value.get("name");
-    const description = value.get("description");
-    const image = value.get("image");
+//   const value = json.fromBytes(content).toObject();
+//   if (value) {
+//     // Handle basic metadata fields
+//     const name = value.get("name");
+//     const description = value.get("description");
+//     const image = value.get("image");
 
-    metadata.name = name ? name.toString() : null;
-    metadata.description = description ? description.toString() : null;
-    metadata.image = image ? image.toString() : null;
-  }
+//     metadata.name = name ? name.toString() : null;
+//     metadata.description = description ? description.toString() : null;
+//     metadata.image = image ? image.toString() : null;
+//   }
 
-  metadata.save();
-}
+//   metadata.save();
+// }
 
-export function handleVoucherMetadata(content: Bytes): void {
-  let hash = dataSource.stringParam();
-  let context = dataSource.context();
-  let voucherId = context.getBytes(VOUCHER_KEY);
+// export function handleVoucherMetadata(content: Bytes): void {
+//   let hash = dataSource.stringParam();
+//   let context = dataSource.context();
+//   let voucherId = context.getBytes(VOUCHER_KEY);
 
-  let metadata = new VoucherMetadata(Bytes.fromUTF8(hash));
-  metadata.id = Bytes.fromUTF8(hash);
-  metadata.hash = hash;
+//   let metadata = new VoucherMetadata(Bytes.fromUTF8(hash));
+//   metadata.id = Bytes.fromUTF8(hash);
+//   metadata.hash = hash;
 
-  let voucher = Voucher.load(voucherId);
-  if (!voucher) return;
-  metadata.voucher = voucherId;
+//   let voucher = Voucher.load(voucherId);
+//   if (!voucher) return;
+//   metadata.voucher = voucherId;
 
-  const value = json.fromBytes(content).toObject();
-  if (value) {
-    // Handle basic metadata fields
-    const name = value.get("name");
-    const description = value.get("description");
-    const animation_url = value.get("animation_url");
-    const image = value.get("image");
+//   const value = json.fromBytes(content).toObject();
+//   if (value) {
+//     // Handle basic metadata fields
+//     const name = value.get("name");
+//     const description = value.get("description");
+//     const animation_url = value.get("animation_url");
+//     const image = value.get("image");
 
-    metadata.name = name ? name.toString() : null;
-    metadata.description = description ? description.toString() : null;
-    metadata.animationUrl = animation_url ? animation_url.toString() : null;
-    metadata.image = image ? image.toString() : null;
-  }
+//     metadata.name = name ? name.toString() : null;
+//     metadata.description = description ? description.toString() : null;
+//     metadata.animationUrl = animation_url ? animation_url.toString() : null;
+//     metadata.image = image ? image.toString() : null;
+//   }
 
-  metadata.save();
-}
+//   metadata.save();
+// }

@@ -21,3 +21,31 @@ export class DoudoNFTIpfsContent extends DataSourceTemplate {
     DataSourceTemplate.createWithContext("DoudoNFTIpfsContent", [cid], context);
   }
 }
+
+export class UnrevealTokenIpfsContent extends DataSourceTemplate {
+  static create(cid: string): void {
+    DataSourceTemplate.create("UnrevealTokenIpfsContent", [cid]);
+  }
+
+  static createWithContext(cid: string, context: DataSourceContext): void {
+    DataSourceTemplate.createWithContext(
+      "UnrevealTokenIpfsContent",
+      [cid],
+      context,
+    );
+  }
+}
+
+export class RevealTokenIpfsContent extends DataSourceTemplate {
+  static create(cid: string): void {
+    DataSourceTemplate.create("RevealTokenIpfsContent", [cid]);
+  }
+
+  static createWithContext(cid: string, context: DataSourceContext): void {
+    DataSourceTemplate.createWithContext(
+      "RevealTokenIpfsContent",
+      [cid],
+      context,
+    );
+  }
+}

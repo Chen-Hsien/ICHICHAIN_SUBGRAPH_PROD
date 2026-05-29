@@ -6,6 +6,10 @@
     },
     "Contract": {
       "address": "0x25B983DD08C9F534D3cda1289DD2B0047732c06B"
+    },
+    "MarketplaceV3": {
+      "address": "0x9CAC1EeaeCE9e2C6674340Ce3171b0452A124ff3",
+      "startBlock": 83675306
     }
   }
 }

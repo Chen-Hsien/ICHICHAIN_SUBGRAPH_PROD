@@ -169,6 +169,102 @@ dataSources:
         - event: VouchersIssuedFromSubscription(indexed address,uint256[],uint256[],uint256)
           handler: handleVouchersIssuedFromSubscription
       file: ./src/contract.ts
+  - kind: ethereum
+    name: MarketplaceV3
+    network: matic
+    source:
+      address: "0x9cac1eeaece9e2c6674340ce3171b0452a124ff3"
+      abi: MarketplaceV3
+      startBlock: 83675306
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ContractURIUpdated
+        - ExtensionAdded
+        - ExtensionRemoved
+        - ExtensionReplaced
+        - FlatPlatformFeeUpdated
+        - FunctionDisabled
+        - FunctionEnabled
+        - Initialized
+        - PlatformFeeInfoUpdated
+        - PlatformFeeTypeUpdated
+        - RoleAdminChanged
+        - RoleGranted
+        - RoleRevoked
+        - RoyaltyEngineUpdated
+      abis:
+        - name: MarketplaceV3
+          file: ./abis/MarketplaceV3.json
+      eventHandlers:
+        - event: ContractURIUpdated(string,string)
+          handler: handleContractURIUpdated
+        - event: ExtensionAdded(indexed string,indexed
+            address,((string,string,address),(bytes4,string)[]))
+          handler: handleExtensionAdded
+        - event: ExtensionRemoved(indexed string,((string,string,address),(bytes4,string)[]))
+          handler: handleExtensionRemoved
+        - event: ExtensionReplaced(indexed string,indexed
+            address,((string,string,address),(bytes4,string)[]))
+          handler: handleExtensionReplaced
+        - event: FlatPlatformFeeUpdated(address,uint256)
+          handler: handleFlatPlatformFeeUpdated
+        - event: FunctionDisabled(indexed string,indexed bytes4,(string,string,address))
+          handler: handleFunctionDisabled
+        - event: FunctionEnabled(indexed string,indexed
+            bytes4,(bytes4,string),(string,string,address))
+          handler: handleFunctionEnabled
+        - event: Initialized(uint8)
+          handler: handleInitialized
+        - event: PlatformFeeInfoUpdated(indexed address,uint256)
+          handler: handlePlatformFeeInfoUpdated
+        - event: PlatformFeeTypeUpdated(uint8)
+          handler: handlePlatformFeeTypeUpdated
+        - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
+          handler: handleRoleAdminChanged
+        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleGranted
+        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleRevoked
+        - event: RoyaltyEngineUpdated(indexed address,indexed address)
+          handler: handleRoyaltyEngineUpdated
+        - event: BuyerApprovedForListing(indexed uint256,indexed address,bool)
+          handler: handleBuyerApprovedForListing
+        - event: CancelledListing(indexed address,indexed uint256)
+          handler: handleCancelledListing
+        - event: CurrencyApprovedForListing(indexed uint256,indexed address,uint256)
+          handler: handleCurrencyApprovedForListing
+        - event: NewListing(indexed address,indexed uint256,indexed
+            address,(uint256,uint256,uint256,uint256,uint128,uint128,address,address,address,uint8,uint8,bool))
+          handler: handleNewListing
+        - event: NewSale(indexed address,indexed uint256,indexed
+            address,uint256,address,uint256,uint256)
+          handler: handleNewSale
+        - event: UpdatedListing(indexed address,indexed uint256,indexed
+            address,(uint256,uint256,uint256,uint256,uint128,uint128,address,address,address,uint8,uint8,bool))
+          handler: handleUpdatedListing
+        - event: AuctionClosed(indexed uint256,indexed address,indexed
+            address,uint256,address,address)
+          handler: handleAuctionClosed
+        - event: CancelledAuction(indexed address,indexed uint256)
+          handler: handleCancelledAuction
+        - event: NewAuction(indexed address,indexed uint256,indexed
+            address,(uint256,uint256,uint256,uint256,uint256,uint64,uint64,uint64,uint64,address,address,address,uint8,uint8))
+          handler: handleNewAuction
+        - event: NewBid(indexed uint256,indexed address,indexed
+            address,uint256,(uint256,uint256,uint256,uint256,uint256,uint64,uint64,uint64,uint64,address,address,address,uint8,uint8))
+          handler: handleNewBid
+        - event: AcceptedOffer(indexed address,indexed uint256,indexed
+            address,uint256,address,uint256,uint256)
+          handler: handleAcceptedOffer
+        - event: CancelledOffer(indexed address,indexed uint256)
+          handler: handleCancelledOffer
+        - event: NewOffer(indexed address,indexed uint256,indexed
+            address,(uint256,uint256,uint256,uint256,uint256,address,address,address,uint8,uint8))
+          handler: handleNewOffer
+      file: ./src/marketplace-v-3.ts
 templates:
   - kind: file/ipfs
     name: IpfsContent
@@ -203,3 +299,29 @@ templates:
          file: ./abis/Contract.json
       handler: handleDoudoNFTContent
       file: ./src/contract.ts
+  - kind: file/ipfs
+    name: UnrevealTokenIpfsContent
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - UnrevealTokenMetadata
+      abis:
+       - name: doudonft
+         file: ./abis/ICHICHAIN.json
+      handler: handleUnrevealTokenContent
+      file: ./src/ichichain.ts
+  - kind: file/ipfs
+    name: RevealTokenIpfsContent
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - RevealTokenMetadata
+      abis:
+       - name: doudonft
+         file: ./abis/ICHICHAIN.json
+      handler: handleRevealTokenContent
+      file: ./src/ichichain.ts
